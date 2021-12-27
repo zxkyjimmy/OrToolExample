@@ -1,6 +1,5 @@
 """Minimal jobshop example."""
 import collections
-from ortools.sat.cp_model_pb2 import FEASIBLE
 from ortools.sat.python import cp_model
 
 def main():
@@ -9,7 +8,7 @@ def main():
   jobs_data = [  # task = (machine_id, processing_time).
     [(0, 3), (1, 2), (2, 2)],  # Job 0
     [(0, 2), (2, 1), (1, 4)],  # Job 1
-    [(1, 4), (2, 3)]  # Job 2
+    [(1, 4), (2, 3)]           # Job 2
   ]
 
   machines_count = 1 + max(task[0] for job in jobs_data for task in job)

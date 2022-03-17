@@ -11,6 +11,10 @@ def main():
     [(1, 4), (2, 3)]           # Job 2
   ]
 
+  jobs_due = [9, 11, 6]
+
+  assert(len(jobs_data) == len(jobs_due))
+
   machines_count = 1 + max(task[0] for job in jobs_data for task in job)
   all_machines = range(machines_count)
   # Compute horizon dynamically as the sum of all durations.
@@ -49,11 +53,29 @@ def main():
       model.Add(all_tasks[job_id, task_id + 1].start >= all_tasks[job_id, task_id].end)
   
   # Makespan objective.
-  obj_var = model.NewIntVar(0, horizon, 'makespan')
-  model.AddMaxEquality(obj_var, [
+  makespan_var = model.NewIntVar(0, horizon, 'makespan')
+  model.AddMaxEquality(makespan_var, [
     all_tasks[job_id, len(job) - 1].end
     for job_id, job in enumerate(jobs_data)
   ])
+
+  # Tardiness objective.
+  delays = []
+  for job_id, job in enumerate(jobs_data):
+    due = jobs_due[job_id]
+    end = all_tasks[job_id, len(job) - 1].end
+
+    diff_var = model.NewIntVar(-horizon, horizon, f'diff_{job_id}')
+    model.Add(diff_var == (end - due))
+    
+    delay_var = model.NewIntVar(0, horizon, f'delay_{job_id}')
+    model.AddMaxEquality(delay_var, [diff_var, 0])
+    delays.append(delay_var)
+
+  tardiness_var = model.NewIntVar(0, horizon * len(jobs_data), 'tardiness')
+  model.Add(tardiness_var == sum(delays))
+
+  obj_var = makespan_var + tardiness_var
   model.Minimize(obj_var)
 
   # Create the solver and solve.
@@ -103,7 +125,9 @@ def main():
       output += sol_line
     
     # Finally print the solution found.
-    print(f'Optimal Schedule Length: {solver.ObjectiveValue()}')
+    print(f'Optimal Schedule Objective: {solver.ObjectiveValue()}')
+    print(f'                 Tardiness: {solver.Value(tardiness_var)}')
+    print(f'                 Makespan:  {solver.Value(makespan_var)}')
     print(output)
   else:
     print('No solution found.')

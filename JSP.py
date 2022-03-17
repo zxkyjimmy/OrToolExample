@@ -60,20 +60,16 @@ def main():
   ])
 
   # Tardiness objective.
+  tardiness_var = 0
   delays = []
   for job_id, job in enumerate(jobs_data):
     due = jobs_due[job_id]
     end = all_tasks[job_id, len(job) - 1].end
 
-    diff_var = model.NewIntVar(-horizon, horizon, f'diff_{job_id}')
-    model.Add(diff_var == (end - due))
-    
     delay_var = model.NewIntVar(0, horizon, f'delay_{job_id}')
-    model.AddMaxEquality(delay_var, [diff_var, 0])
+    model.AddMaxEquality(delay_var, [(end - due), 0])
     delays.append(delay_var)
-
-  tardiness_var = model.NewIntVar(0, horizon * len(jobs_data), 'tardiness')
-  model.Add(tardiness_var == sum(delays))
+    tardiness_var += delay_var
 
   obj_var = makespan_var + tardiness_var
   model.Minimize(obj_var)

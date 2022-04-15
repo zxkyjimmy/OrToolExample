@@ -1,6 +1,5 @@
 """Minimal jobshop example."""
 import collections
-from jax import jax2tf_associative_scan_reductions
 from ortools.sat.python import cp_model
 
 

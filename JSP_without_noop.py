@@ -2,18 +2,40 @@
 import collections
 from ortools.sat.python import cp_model
 
+import sys
+import numpy as np
+
+
+def read_data(name):
+  data = []
+
+  with open(name) as f:
+    while line := f.readline():
+      if line[0] != '#':
+        break
+    n, m = [int(x) for x in line.split()]
+    for i in range(n):
+      line = f.readline()
+      nums = [int(x) for x in line.split()]
+      data.append(list())
+      for j in range(m):
+        data[i].append((nums[j * 2], nums[j * 2 + 1]))
+
+  return data
+
 
 def main():
   """Minimal jobshop problem."""
-  # Data.
-  jobs_data = [  # task = (machine_id, processing_time).
-    [(2,  1), (0,  3), (1,  6), (3,  7), (5,  3), (4,  6)],
-    [(1,  8), (2,  5), (4, 10), (5, 10), (0, 10), (3,  4)],
-    [(2,  5), (3,  4), (5,  8), (0,  9), (1,  1), (4,  7)],
-    [(1,  5), (0,  5), (2,  5), (3,  3), (4,  8), (5,  9)],
-    [(2,  9), (1,  3), (4,  5), (5,  4), (0,  3), (3,  1)],
-    [(1,  3), (3,  3), (5,  9), (0, 10), (4,  4), (2,  1)],
-  ]
+
+  if len(sys.argv) == 2:
+    name = sys.argv[1]
+  else:
+    print('No file name')
+    print(f'Usage: python {sys.argv[0]} file_name')
+    return
+
+  # Data
+  jobs_data = read_data(name)
 
   machines_count = 1 + max(task[0] for job in jobs_data for task in job)
   all_machines = range(machines_count)
@@ -83,7 +105,8 @@ def main():
                                     f'idle_{j1}_{j2} on {machine}')
         all_idles[machine, j1, j2] = task_type(
             start=start, end=end, interval=idle)
-        tmp_start = model.NewIntVar(0, horizon, f'tmp_start_{j1}_{j2} on {machine}')
+        tmp_start = model.NewIntVar(0, horizon,
+                                    f'tmp_start_{j1}_{j2} on {machine}')
         tmp_end = model.NewIntVar(0, horizon, f'tmp_end_{j1}_{j2} on {machine}')
         same = model.NewBoolVar(f'{j1}.end == {j2}.start on {machine}')
         model.Add(j1_end == j2_start).OnlyEnforceIf(same)
